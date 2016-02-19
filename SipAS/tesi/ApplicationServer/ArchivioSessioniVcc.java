@@ -7,6 +7,7 @@ import javax.sip.header.FromHeader;
 import javax.sip.header.ToHeader;
 import javax.sip.message.Message;
 import javax.sip.message.Request;
+import javax.sip.message.Response;
 
 public class ArchivioSessioniVcc {
 
@@ -48,11 +49,27 @@ public class ArchivioSessioniVcc {
 	}
 
 	public SessioneVcc get(Message message) {
+		
+		
 		String fromURI = ((FromHeader) message.getHeader("From")).getAddress()
 				.getURI().toString();
 		String toURI = ((ToHeader) message.getHeader("To")).getAddress()
 				.getURI().toString();
+		// add and modify by me
 		SessioneVcc session = new SessioneVcc(fromURI, toURI);
+		if(message instanceof Request)
+		{
+			Request msgReq = (Request) message;
+			if (msgReq.getMethod().compareTo(Request.BYE)==0)
+			{
+				session = new SessioneVcc(toURI, fromURI);
+			}
+			
+		}
+		
+		// end modify by me
+	
+		
 		int indice = lista.indexOf(session);
 		if (indice == -1)
 			return null;

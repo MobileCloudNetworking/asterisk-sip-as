@@ -3,6 +3,7 @@ package tesi.ApplicationServer;
 import java.text.ParseException;
 import java.util.ListIterator;
 import java.util.Properties;
+import java.util.StringTokenizer;
 import java.util.Vector;
 import java.util.ArrayList;
 import java.util.Hashtable;
@@ -67,16 +68,16 @@ public class SipAs implements SipListener {
 	
 	private SipProvider sipProvider;
 	
-	private static final String asteriskAddress = "192.168.56.4";
+	private static  String asteriskAddress = "192.168.56.4";
 	
-	private static final int asteriskPort = 5070;
+	private static  int asteriskPort = 5070;
 	
 
-	private static final String localAddress = "192.168.56.1";
+	private static  String localAddress = "192.168.56.1";
 
-	private static final int localPort = 5060;
+	private static  int localPort = 5060;
 
-	private static final String mediaServer = "192.168.56.4";
+	private static  String mediaServer = "192.168.56.4";
 
 	private static final int primaPortaLibera = 33330;
 	
@@ -92,7 +93,7 @@ public class SipAs implements SipListener {
 	
 	private Hashtable byeTable = null;
 	
-
+	private static final boolean remoteRun=true;
 	
 	//private Hashtable sessionProgressTable=null;
 	
@@ -105,6 +106,22 @@ public class SipAs implements SipListener {
 	 * @param args
 	 */
 	public static void main(String[] args) {
+		if(remoteRun)
+		{
+			if(args.length != 4)
+			{
+				System.out.println("\nError in launching SipAs...\n");
+				System.out.println("SipAs takes 4 arguments, localAddress localPort asteriskAddress asteriskPort...\n");
+				System.exit(-1);
+			}else
+			{
+				localAddress = args[0];
+				localPort = Integer.parseInt(args[1]);
+				asteriskAddress = args[2];
+				asteriskPort = Integer.parseInt(args[3]);
+				mediaServer = asteriskAddress;
+			}
+		}
 		// TODO Auto-generated method stub
 		new SipAs().init();
 	}
@@ -260,7 +277,7 @@ public class SipAs implements SipListener {
 			if(userAgentHeader != null)
 			    userAgent = userAgentHeader.getProduct().next().toString();
 			System.out.println("Processo un BYE");
-			if(userAgent!= null &&userAgent.equalsIgnoreCase("Asterisk"))
+			if(userAgent!= null &&userAgent.contains("Asterisk")/*.equalsIgnoreCase("Asterisk")*/)
 			{
 				processAsteriskBye(request);
 			}
@@ -368,11 +385,18 @@ public class SipAs implements SipListener {
 		if(response.getStatusCode()==Response.OK && cSeq.getMethod().equals("BYE"))
 		{
 			UserAgentHeader userAgentHeader = (UserAgentHeader)response.getHeader("User-Agent");
-			if(userAgentHeader!=null)
+			// add by me, checking server header
+			ServerHeader server = (ServerHeader) response.getHeader("Server");
+			if(userAgentHeader!=null || server!=null)
 			{
-				String userAgent = userAgentHeader.getProduct().next().toString();
-			    if(userAgent.equalsIgnoreCase("Asterisk"))
-			           processAsteriskByeOK(response);
+			
+				//String userAgent = userAgentHeader.getProduct().next().toString();
+			    if(/*userAgent.contains("Asterisk") ||*/ server.toString().contains("Asterisk"))
+			    {
+			    	
+			    	 processAsteriskByeOK(response);
+			    }
+			          
 			    else
 			    	{
 			    		inoltraByeOKToAsterisk(response);
@@ -389,6 +413,7 @@ public class SipAs implements SipListener {
 			}
 		    else
 		    {
+	
 	    		inoltraByeOKToAsterisk(response);
 	    		try{
 	    			SipUtils.removeViaHeader(response);
@@ -528,6 +553,7 @@ public class SipAs implements SipListener {
 			sessione.setTagFrom(tag);
 			asteriskTable.put(from, asteriskRequest);
 			System.out.println(request);
+			System.out.println("\n     Sending the follow request       \n"+request);
 			sipProvider.sendRequest(request);
 			System.out.println("     SENT       ");
 			
@@ -635,10 +661,15 @@ public class SipAs implements SipListener {
 		
 		System.out.println("FORWARDING  BYE TO ASTERISK");
 		try{
+		ArchivioSessioniVcc archive = ArchivioSessioniVcc.getInstance();
+		SessioneVcc session = archive.get(request);
 		FromHeader from = (FromHeader) request.getHeader("From");
+		ToHeader to = (ToHeader) request.getHeader("To"); 
+		//		Address fromAddress = from.getAddress();
+
 		Address fromAddress = from.getAddress();
 		byeTable.put(fromAddress.getDisplayName(), request);
-		ToHeader to = (ToHeader) request.getHeader("To");
+		//ToHeader to = (ToHeader) request.getHeader("To");
 		String user = ((SipURI)to.getAddress().getURI()).getUser();
 		SipURI contactUri = addressFactory.createSipURI(null, user+"@"+asteriskAddress);
 		contactUri.setPort(5070);
@@ -648,6 +679,14 @@ public class SipAs implements SipListener {
 		
 		ListIterator viaHeaders = request.getHeaders("Via");
 		ArrayList vias = new ArrayList();
+		// add by me -- modifing the tag
+	
+		String tag1= from.getTag();
+		System.out.println(tag1+"\n");
+		
+		from.setTag(tag1);
+		to.setTag(session.getTagTo());
+		//end add by me
 		while(viaHeaders.hasNext())
 		{
 			vias.add(viaHeaders.next());
@@ -661,7 +700,7 @@ public class SipAs implements SipListener {
 //		asteriskRequest.addHeader(assertedIdentity);
 		Address toAddress = to.getAddress();
 		AddressImpl astAddress = new AddressImpl();
-		SipURI asteriskUri = addressFactory.createSipURI(null, "10.0.1.5");
+		SipURI asteriskUri = addressFactory.createSipURI(null, asteriskAddress);
 		asteriskUri.setPort(5070);
 		astAddress.setAddess(asteriskUri);
 		
@@ -1137,7 +1176,14 @@ public class SipAs implements SipListener {
 	
 	private void processAsteriskByeOK(Response response)
 	{
-		response.removeHeader("Via");
+		SipUtils.removeViaHeader(response);
+		//the first ok from Asterisk must be ignored
+//		try {
+//			sipProvider.sendResponse(response);
+//		} catch (SipException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 		
 	}
 	
@@ -1145,14 +1191,37 @@ public class SipAs implements SipListener {
 	private void processAsteriskBye(Request request)
 	{
 		try{
-		String from = ((FromHeader)request.getHeader("From")).getAddress().getDisplayName();
-		Request byeRequest = (Request) byeTable.get(from);
-		System.out.println("\n\n\nBYE REQUEST, FIRST\n"+byeRequest);
-		byeRequest = SipUtils.gestisciRouting(byeRequest);
 		
-		System.out.println("\nBYE REQUEST, THEN\n"+byeRequest);
-		String key = from + "Asterisk";
+		ToHeader to = (ToHeader) request.getHeader("To");
+			
+		String name = to.getName();
+		Address displayName = to.getAddress();
+		StringTokenizer st = new StringTokenizer(displayName.toString(), "@");
+		String firstStep = st.nextToken(); // getting the first token <sip:name
+		st = new StringTokenizer(firstStep,":");
+		st.nextToken();
+		String trueName = st.nextToken();
+		displayName.setDisplayName(trueName);
+		to.setAddress(displayName);
+		request.setHeader(to);	
+		//String from = ((FromHeader)request.getHeader("From")).getAddress().getDisplayName();
+		String toName = ((ToHeader)request.getHeader("To")).getAddress().getDisplayName();
+		Request byeRequest = (Request) byeTable.get(toName);
+//		System.out.println("\n\n\nBYE REQUEST, FIRST\n"+byeRequest);
+//		//byeRequest = SipUtils.gestisciRouting(byeRequest);
+//		
+//		System.out.println("\nBYE REQUEST, THEN\n"+byeRequest);
+		
+		System.out.println("\n\n\n displayName: "+displayName+"\n FirstStep: "+firstStep+"\n trueName: "+trueName+"\n\n\n");
+		System.out.println("\n\n Stringhe prova nome\n\n nome: "+name+"\n displayName: "+displayName+"\n\n Fine Stringhe prova nome\n\n");
+		String key = toName + "Asterisk";
+		System.out.println("\nLa CHIAVE: "+key);
 		byeTable.put(key, request);
+		// added by me
+		RouteHeader rh = (RouteHeader) headerFactory.createRouteHeader(((ToHeader)byeRequest.getHeader("To")).getAddress());
+		byeRequest.setHeader(rh);
+		System.out.println("\nAdded route header... sending request\n"+byeRequest);
+		//end added by me
 		sipProvider.sendRequest(byeRequest);
 		}
 		catch(Exception e)
