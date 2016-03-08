@@ -77,6 +77,15 @@ The uas has to run the following command in order to start listening calls.
 $ sudo sipp -rtp_echo -mp 6000 -trace_msg  -p 5060 -mi 192.168.85.115 -sf uas_multi.xml -s sut -rsa 192.168.85.113:5060 -l 2 -m 2 -nr  192.168.8
 ```
 
+Asterisk:
+
+Inside /etc/asterisk/ in Asterisk VM there are two files, configureSip.sh and configureExtensions.sh. These files re-configure sip.conf and extensions.conf for working with a certain number of users. They must be run under root and take a paramenter, the double of number of users you want to create. Example:
+
+```
+$ sudo ./configureSip.sh 250
+```
+With this line, sip.conf will be configured for working with 500 users; indeed configureSip.sh will create 250 Alice users and 250 Bob users (Alice1, Alice2, ..., Alicen and Bob1, Bob2, ..., Bobn) 
+
 
 
 
