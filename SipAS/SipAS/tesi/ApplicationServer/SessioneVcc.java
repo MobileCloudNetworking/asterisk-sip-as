@@ -62,9 +62,43 @@ public class SessioneVcc {
 	
 	private long cSeq = -1;
 	
+	private int providerIndex = -1;
+	
+	//added to implement the scaling
+	
+		private String asteriskAddress;
+		
+		private int asteriskPort;
+	
+
+	public String getAsteriskAddress() {
+			return asteriskAddress;
+		}
+
+		public void setAsteriskAddress(String asteriskAddress) {
+			this.asteriskAddress = asteriskAddress;
+		}
+
+		public int getAsteriskPort() {
+			return asteriskPort;
+		}
+
+		public void setAsteriskPort(int asteriskPort) {
+			this.asteriskPort = asteriskPort;
+		}
 
 	public boolean isEstablished() {
 		return established;
+	}
+	
+	
+
+	public int getProviderIndex() {
+		return providerIndex;
+	}
+
+	public void setProviderIndex(int providerIndex) {
+		this.providerIndex = providerIndex;
 	}
 
 	public void setEstablished(boolean established) {

@@ -39,9 +39,20 @@ public class ArchivioSessioniVcc {
 
 	}
 	
+<<<<<<< HEAD
+	public int getSessionsNumber()
+	{
+		return lista.size();
+	}
+	
+	
+
+	public SessioneVcc remove(Message request) {
+=======
 	
 
 	public SessioneVcc remove(Request request) {
+>>>>>>> 79922d983b2abd261969ca8eb8b0ab0c8751b905
 
 		SessioneVcc sessioneVcc = get(request);
 		lista.remove(sessioneVcc);
@@ -58,6 +69,7 @@ public class ArchivioSessioniVcc {
 		
 		SessioneVcc session = new SessioneVcc(fromURI, toURI);
 		// add and modify by me
+		SessioneVcc sessionRevert = new SessioneVcc(toURI, fromURI);
 		if(message instanceof Request)
 		{
 			Request msgReq = (Request) message;
@@ -65,6 +77,7 @@ public class ArchivioSessioniVcc {
 			{
 				
 				session = new SessioneVcc(toURI, fromURI);
+				sessionRevert = new SessioneVcc(toURI, fromURI);
 			}
 			
 		}
@@ -73,10 +86,19 @@ public class ArchivioSessioniVcc {
 	
 		
 		int indice = lista.indexOf(session);
-		if (indice == -1)
+		int indiceRevert = lista.indexOf(sessionRevert);
+		SessioneVcc result;
+		
+		if (indice < 0 && indiceRevert < 0)
 			return null;
 		else
-			return lista.get(indice);
+		{
+			if(indice<0)
+				return lista.get(indiceRevert);
+			else
+				return lista.get(indice);
+		}
+			
 	}
 
 }

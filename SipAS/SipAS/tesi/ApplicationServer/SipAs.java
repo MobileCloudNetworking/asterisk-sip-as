@@ -1,9 +1,16 @@
 package tesi.ApplicationServer;
  
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.SocketException;
 import java.text.ParseException;
 import java.util.ListIterator;
 import java.util.Properties;
 import java.util.StringTokenizer;
+import java.util.TooManyListenersException;
 import java.util.Vector;
 import java.util.ArrayList;
 import java.util.Hashtable;
@@ -17,6 +24,7 @@ import javax.sip.DialogTerminatedEvent;
 import javax.sip.IOExceptionEvent;
 import javax.sip.InvalidArgumentException;
 import javax.sip.ListeningPoint;
+import javax.sip.ObjectInUseException;
 import javax.sip.PeerUnavailableException;
 import javax.sip.RequestEvent;
 import javax.sip.ResponseEvent;
@@ -30,15 +38,18 @@ import javax.sip.TimeoutEvent;
 import javax.sip.TransactionAlreadyExistsException;
 import javax.sip.TransactionTerminatedEvent;
 import javax.sip.TransactionUnavailableException;
+import javax.sip.TransportNotSupportedException;
 import javax.sip.header.*;
 import javax.sip.message.Message;
 import javax.sip.message.MessageFactory;
 import javax.sip.message.Request;
 import javax.sip.message.Response;
+import javax.sip.header.RouteHeader;
 import javax.sip.header.ToHeader;
 import javax.sip.header.FromHeader;
 
 import gov.nist.javax.sip.address.AddressImpl;
+import gov.nist.javax.sip.address.SipUri;
 
 import javax.sip.header.CallIdHeader;
 import javax.sip.header.MaxForwardsHeader;
@@ -60,17 +71,21 @@ public class SipAs implements SipListener {
 
 	private HeaderFactory headerFactory;
 	
-	private SipFactory sipFactory;
+	private static SipFactory sipFactory;
 	
 	private AddressFactory addressFactory;
 
 	private SipStack sipStack;
 	
+	private SipStack sipStack2;
+	
 	private SipProvider sipProvider;
+	
+	private SipProvider sipProvider2;
 	
 	private static  String asteriskAddress = "192.168.56.4";
 	
-	private static  int asteriskPort = 5070;
+	private static  int asteriskPort = 5060;
 	
 
 	private static  String localAddress = "192.168.56.1";
@@ -94,9 +109,28 @@ public class SipAs implements SipListener {
 	private Hashtable byeTable = null;
 	
 	
+	
 	//private Hashtable sessionProgressTable=null;
 	
+	// Added for scaling
 	
+	private int callcounter = 0;
+	
+	private static ArrayList<AsteriskEndPoint> asteriskPool = new ArrayList<AsteriskEndPoint>();
+	
+	private static ArrayList<SipStack> asteriskSipStackPool = new ArrayList<SipStack>();
+	
+	private static ArrayList<SipProvider> asteriskSipproviders = new ArrayList<SipProvider>();
+	
+	private static String secondAsteriskAddress;
+	
+	private static int secondAsteriskPort;
+	
+	public static int portCounter=1;
+	
+	private static SipAs  sa = null;
+	
+	// end added for scaling
 
 
 	// private static final boolean log=false;
@@ -105,6 +139,7 @@ public class SipAs implements SipListener {
 	 * @param args
 	 */
 	public static void main(String[] args) {
+		byte[] receivedData = new byte[1024];
 		switch(args.length)
 		{
 			case 0:
@@ -121,6 +156,17 @@ public class SipAs implements SipListener {
 				mediaServer = asteriskAddress;
 			}break;
 			
+			case 6:
+			{
+				localAddress = args[0];
+				localPort = Integer.parseInt(args[1]);
+				asteriskAddress = args[2];
+				asteriskPort = Integer.parseInt(args[3]);
+				mediaServer = asteriskAddress;
+				secondAsteriskAddress = args[4];
+				secondAsteriskPort =  Integer.parseInt(args[5]);
+			}break;
+			
 			default:
 			{
 				System.out.println("\nError in launching SipAs...\n");
@@ -130,11 +176,147 @@ public class SipAs implements SipListener {
 		}
 		// TODO Auto-generated method stub
 		new SipAs().init();
+		
+		try {
+<<<<<<< HEAD
+			DatagramSocket ds = null;
+=======
+			DatagramSocket ds = new DatagramSocket(5070);
+>>>>>>> 79922d983b2abd261969ca8eb8b0ab0c8751b905
+//			char[] buffer = new char[1];
+//			InputStreamReader isr = new InputStreamReader(System.in);
+//			BufferedReader br = new BufferedReader(isr);
+			while(true)
+			{
+//				String car = br.readLine();
+//				switch(car.charAt(0))
+//				{
+//					case 'a':
+//					{
+//						//add
+//						asteriskPool.add(new AsteriskEndPoint(secondAsteriskAddress,secondAsteriskPort));
+//						System.out.println("A new Asterisk VM instance has been added at "+secondAsteriskAddress+":"+secondAsteriskPort);
+//						Properties properties2 = new Properties();
+//						properties2.setProperty("javax.sip.OUTBOUND_PROXY", secondAsteriskAddress + ":"
+//								+ secondAsteriskPort + "/" + "udp");
+//						properties2.setProperty("javax.sip.STACK_NAME", "sipAs2");
+//						SipStack newSipStack = sipFactory.createSipStack(properties2);
+//						ListeningPoint lp2 = newSipStack.createListeningPoint(localAddress,
+//								5070+portCounter, "udp");
+//						portCounter++;
+//						SipProvider newSipProvider = newSipStack.createSipProvider(lp2);
+//						newSipProvider.setAutomaticDialogSupportEnabled(false);
+//						newSipProvider.addSipListener(sa);
+//						asteriskPool.add(new AsteriskEndPoint(secondAsteriskAddress,secondAsteriskPort));
+//						asteriskSipStackPool.add(newSipStack);
+//						asteriskSipproviders.add(newSipProvider);
+//					}break;
+//					
+//					case 'r':
+//					{
+//						AsteriskEndPoint ap = new AsteriskEndPoint(secondAsteriskAddress,secondAsteriskPort);
+//						int index = asteriskPool.indexOf(ap);
+//						asteriskPool.remove(ap);
+//						asteriskSipStackPool.remove(index);
+//						asteriskSipproviders.remove(index);
+//						System.out.println("An Asterisk VM instance has been removed at "+secondAsteriskAddress+":"+secondAsteriskPort);
+//					}break;
+//				}
+<<<<<<< HEAD
+				ds=new DatagramSocket(5070);
+=======
+>>>>>>> 79922d983b2abd261969ca8eb8b0ab0c8751b905
+				DatagramPacket dp = new DatagramPacket(receivedData, receivedData.length);
+				System.out.println("A Service UDP socket has been opened at "+localAddress+":5070");
+				ds.receive(dp);
+				String data = new String(dp.getData());
+<<<<<<< HEAD
+				System.out.println("Data Received ->  "+data);
+=======
+>>>>>>> 79922d983b2abd261969ca8eb8b0ab0c8751b905
+				StringTokenizer st = new StringTokenizer(data,"@");
+				String action =st.nextToken();
+				String address = st.nextToken();
+				int port = Integer.parseInt(st.nextToken().trim());
+				if(action.compareTo("add")==0)
+				{
+					//add
+<<<<<<< HEAD
+					//asteriskPool.add(new AsteriskEndPoint(address,port));
+					System.out.println("A new Asterisk VM instance has been added at "+address+":"+port);
+=======
+					asteriskPool.add(new AsteriskEndPoint(secondAsteriskAddress,secondAsteriskPort));
+					System.out.println("A new Asterisk VM instance has been added at "+secondAsteriskAddress+":"+secondAsteriskPort);
+>>>>>>> 79922d983b2abd261969ca8eb8b0ab0c8751b905
+					Properties properties2 = new Properties();
+					properties2.setProperty("javax.sip.OUTBOUND_PROXY", address + ":"
+							+ port + "/" + "udp");
+					properties2.setProperty("javax.sip.STACK_NAME", "sipAs2");
+					SipStack newSipStack = sipFactory.createSipStack(properties2);
+					ListeningPoint lp2 = newSipStack.createListeningPoint(localAddress,
+							5070+portCounter, "udp");
+					portCounter++;
+					SipProvider newSipProvider = newSipStack.createSipProvider(lp2);
+					newSipProvider.setAutomaticDialogSupportEnabled(false);
+					newSipProvider.addSipListener(sa);
+					asteriskPool.add(new AsteriskEndPoint(address,port));
+					asteriskSipStackPool.add(newSipStack);
+					asteriskSipproviders.add(newSipProvider);
+<<<<<<< HEAD
+					ds.close();
+				}
+				if(action.compareTo("rem")==0)
+=======
+					
+				}
+				else
+>>>>>>> 79922d983b2abd261969ca8eb8b0ab0c8751b905
+				{
+					//remove
+					AsteriskEndPoint ap = new AsteriskEndPoint(address,port);
+					int index = asteriskPool.indexOf(ap);
+					asteriskPool.remove(ap);
+					asteriskSipStackPool.remove(index);
+					asteriskSipproviders.remove(index);
+					portCounter--;
+					System.out.println("An Asterisk VM instance has been removed at "+address+":"+port);
+<<<<<<< HEAD
+					ds.close();
+=======
+>>>>>>> 79922d983b2abd261969ca8eb8b0ab0c8751b905
+				}
+			}
+		} 
+		catch (SocketException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (PeerUnavailableException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (TransportNotSupportedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InvalidArgumentException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ObjectInUseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (TooManyListenersException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 	}
+
+	
 
 	private void init() {
 		// TODO Auto-generated method stub
-	
+		sa= this;
 		table = new Hashtable();
 		asteriskTable = new Hashtable();
 		//inviteOKTable = new Hashtable();
@@ -147,6 +329,7 @@ public class SipAs implements SipListener {
 		sipFactory = SipFactory.getInstance();
 		sipFactory.setPathName("gov.nist");
 		Properties properties = new Properties();
+		//Properties properties2 = new Properties();
 		try{
 		addressFactory = sipFactory.createAddressFactory();
 		}
@@ -161,6 +344,10 @@ public class SipAs implements SipListener {
 				+ asteriskPort + "/" + "udp");
 		properties.setProperty("javax.sip.STACK_NAME", "sipAs");
 		
+//		properties2.setProperty("javax.sip.OUTBOUND_PROXY", "192.168.56.5" + ":"
+//				+ "5070" + "/" + "udp");
+//		properties2.setProperty("javax.sip.STACK_NAME", "sipAs2");
+		
 		// properties.setProperty("gov.nist.javax.sip.DEBUG_LOG",
 		// "sipAsdebug.txt");
 		// properties.setProperty("gov.nist.javax.sip.SERVER_LOG",
@@ -169,6 +356,7 @@ public class SipAs implements SipListener {
 		// //TRACE + DEBUG
 		try {
 			sipStack = sipFactory.createSipStack(properties);
+			//sipStack2 = sipFactory.createSipStack(properties2);
 			
 		} catch (PeerUnavailableException e) {
 			// TODO Auto-generated catch block
@@ -181,14 +369,19 @@ public class SipAs implements SipListener {
 			headerFactory = sipFactory.createHeaderFactory();
 			ListeningPoint lp = sipStack.createListeningPoint(localAddress,
 					localPort, "udp");
-		
+//			ListeningPoint lp2 = sipStack2.createListeningPoint(localAddress,
+//					5071, "udp");
+			
 			sipProvider = sipStack.createSipProvider(lp);
+			//sipProvider2 = sipStack2.createSipProvider(lp2);
 			
 			sipProvider.setAutomaticDialogSupportEnabled(false);
+		//	sipProvider2.setAutomaticDialogSupportEnabled(false);
 			
 			System.out.println("An UDP Provider is created on: "
 					+ localAddress + ":" + localPort);
 			sipProvider.addSipListener(this);
+		//	sipProvider2.addSipListener(this);
 			
 			SessioneVcc.firstPort = primaPortaLibera;
 		} catch (Exception e) {
@@ -196,6 +389,13 @@ public class SipAs implements SipListener {
 			// TODO: handle exception
 		}
 
+		asteriskPool.add(new AsteriskEndPoint(asteriskAddress,asteriskPort));
+<<<<<<< HEAD
+		asteriskSipStackPool.add(sipStack);
+=======
+>>>>>>> 79922d983b2abd261969ca8eb8b0ab0c8751b905
+		asteriskSipproviders.add(sipProvider);
+		//asteriskSipproviders.add(sipProvider2);
 	}
 	
 
@@ -209,6 +409,7 @@ public class SipAs implements SipListener {
 		
 		ServerTransaction tr = null;
 		try {
+			//could be moved a
 			tr = sipProvider.getNewServerTransaction(request);
 		} catch (TransactionAlreadyExistsException e1) {
 			// TODO Auto-generated catch block
@@ -338,8 +539,12 @@ public class SipAs implements SipListener {
 						SessioneVcc sessione = archive.get(response);
 						try {
 							Request asteriskAckRequest = (Request) sessione.getAckMessage().clone();
-							SipURI asteriskUri = addressFactory.createSipURI(null, asteriskAddress);
-							asteriskUri.setPort(asteriskPort);
+							// modify for scaling
+//							SipURI asteriskUri = addressFactory.createSipURI(null, asteriskAddress);
+//							asteriskUri.setPort(asteriskPort);
+							SipURI asteriskUri = addressFactory.createSipURI(null, sessione.getAsteriskAddress());
+							asteriskUri.setPort(sessione.getAsteriskPort());
+							// end modify for scaling
 							asteriskAckRequest.setRequestURI(asteriskUri);
 							asteriskAckRequest.removeHeader("Route");
 							asteriskAckRequest.removeHeader("CSeq");
@@ -448,10 +653,12 @@ public class SipAs implements SipListener {
 			ArchivioSessioniVcc archivio = ArchivioSessioniVcc.getInstance();
 			SessioneVcc sessione = archivio.get(response);
 			sessione.setSessionProgress(response);
-			SessionDescription sd = SipUtils.getSessionDescription(response);
-			response.removeContent();
-			SessionDescription newSd = SipUtils.makeSessionDescription(sd, qChiamante);
-			response.setContent(newSd, headerFactory.createContentTypeHeader("application", "sdp"));
+			// removing the sdp modified
+//			SessionDescription sd = SipUtils.getSessionDescription(response);
+//			response.removeContent();
+//			SessionDescription newSd = SipUtils.makeSessionDescription(sd, qChiamante);
+//			response.setContent(newSd, headerFactory.createContentTypeHeader("application", "sdp"));
+			//end removing the sdp modified
 			sipProvider.sendResponse(response);
 			}
 			catch(Exception e)
@@ -493,14 +700,32 @@ public class SipAs implements SipListener {
 		    	
 		
 		    	//Se il messaggio è un re-INVITE che giunge al SipAS per la prima volta
-				if ((sessione!=null) && (sessione.isEstablished()))
-						processReInvite(request);
+				//if ((sessione!=null) && (sessione.isEstablished()))
+						//processReInvite(request);
 				
 				
 				//Se il messaggio di INVITE giunge al SipAS per la prima volta
 				if(sessione==null)
 				    {
+<<<<<<< HEAD
+					
 						archivioSessioniVcc.add(request);
+						//added for scaling
+						int selectedAsterisk = callcounter % asteriskPool.size();
+						System.out.println("\n\nSELECTED ASTERISK  -> "+selectedAsterisk+"\n\n");
+						System.out.println("\n\nCALL CAOUNTER  -> "+callcounter+"\n\n");
+						System.out.println("\n\nASTERISK POOLSIZE  -> "+asteriskPool.size()+"\n\n");
+=======
+						archivioSessioniVcc.add(request);
+						//added for scaling
+						int selectedAsterisk = callcounter % asteriskPool.size();
+>>>>>>> 79922d983b2abd261969ca8eb8b0ab0c8751b905
+						SessioneVcc session = archivioSessioniVcc.get(request);
+						session.setAsteriskAddress(asteriskPool.get(selectedAsterisk).getAddress());
+						session.setAsteriskPort(asteriskPool.get(selectedAsterisk).getPort());
+						session.setProviderIndex(selectedAsterisk);
+						callcounter++;
+						//end added for scaling
 					    inoltraInviteToAsterisk(request);
 					}	
 			
@@ -546,21 +771,25 @@ public class SipAs implements SipListener {
 				
 				supported = headerFactory.createSupportedHeader("replaces");
 			
-			request.addHeader(supported);
-			SessionDescription asteriskSD = SipUtils.getSessionDescription(asteriskRequest);
-			SessionDescription newSD = SipUtils.makeSessionDescription(asteriskSD, qChiamato);
-			request.removeContent();
-			request.setContent(newSD, headerFactory
-					.createContentTypeHeader("application", "sdp"));
+			//request.addHeader(supported);
+			// removing the sdp modified
+//			SessionDescription asteriskSD = SipUtils.getSessionDescription(asteriskRequest);
+//			SessionDescription newSD = SipUtils.makeSessionDescription(asteriskSD, qChiamato);
+//			request.removeContent();
+//			request.setContent(newSD, headerFactory
+//					.createContentTypeHeader("application", "sdp"));
+			//end removing the sdp modified
 			ArchivioSessioniVcc archivio = ArchivioSessioniVcc.getInstance();
 			SessioneVcc sessione = archivio.get(request);
 			String tag = ((FromHeader) asteriskRequest.getHeader("From")).getTag();
+			SipProvider tmpSP = asteriskSipproviders.get(sessione.getProviderIndex());
 			sessione.setAsteriskInvite(request);
 			sessione.setTagFrom(tag);
 			asteriskTable.put(from, asteriskRequest);
 			System.out.println(request);
 			System.out.println("\n     Sending the follow request       \n"+request);
-			sipProvider.sendRequest(request);
+			tmpSP.sendRequest(request);
+			//sipProvider.sendRequest(request);
 			System.out.println("     SENT       ");
 			
 			} catch (ParseException e) {
@@ -616,7 +845,7 @@ public class SipAs implements SipListener {
 		ArchivioSessioniVcc archivio = ArchivioSessioniVcc.getInstance();
 		SessioneVcc sessione = archivio.get(response);
 		Response asteriskResponse = sessione.getOkToAsterisk();
-	
+		SipProvider sp = asteriskSipproviders.get(sessione.getProviderIndex());
 		String utente = ((FromHeader)response.getHeader("From")).getAddress().getDisplayName();
 	
 		
@@ -627,20 +856,35 @@ public class SipAs implements SipListener {
 			try{
 			asteriskResponse = messageFactory.createResponse(200, inviteRequest);
 			asteriskResponse.setReasonPhrase("OK");
+			System.out.println("\n\nThis is the request picked \n\n"+inviteRequest);
+			System.out.println("\n\nEnd This is the request picked \n\n"+inviteRequest);
 			SipUtils.removeViaHeader(asteriskResponse);
-			SessionDescription sd = SipUtils.getSessionDescription(response);
+			//SessionDescription sd = SipUtils.getSessionDescription(response);
 			//add by RV trying to adjust sdp packets
-			SessionDescription newSD = SipUtils.makeSessionDescription(sd, qChiamato);
+			//SessionDescription newSD = SipUtils.makeSessionDescription(sd, qChiamato);
 			
 //			asteriskResponse.setContent(newSD,
 //					headerFactory.createContentTypeHeader("application","sdp"));
-			asteriskResponse.setContent(sd, headerFactory.createContentTypeHeader("application","sdp"));
+			//asteriskResponse.setContent(sd, headerFactory.createContentTypeHeader("application","sdp"));
 			//end: add by RV trying to adjust sdp packets
 			System.out.println("SENDING THE 200 OK:\n"+asteriskResponse);
+			// added for scaling
+//						Address a = addressFactory.createAddress(sessione.getAsteriskAddress()+":"+sessione.getAsteriskPort());
+//						RouteHeader rh = headerFactory.createRouteHeader(a);
+//						asteriskResponse.addHeader(rh);
+						// end added for scaling
 			sessione.setInviteOK(response);
 			sessione.setOkToAsterisk(asteriskResponse);
+			// added for auto registration
+			SipURI su = addressFactory.createSipURI(null, localAddress);
+			su.setPort(localPort);
+			ContactHeader ch = headerFactory.createContactHeader(addressFactory.createAddress(su));
+			
+			asteriskResponse.addHeader(ch);
+			asteriskResponse.setContent(response.getContent(), headerFactory.createContentTypeHeader("application","sdp"));
+			// end added for auto registration
 			//add by RV trying to adjust sdp packets
-			sipProvider.sendResponse(asteriskResponse);
+			sp.sendResponse(asteriskResponse);
 //			sipProvider.sendResponse(response);
 			//end: add by RV trying to adjust sdp packets
 			}
@@ -684,9 +928,14 @@ public class SipAs implements SipListener {
 		byeTable.put(fromAddress.getDisplayName(), request);
 		//ToHeader to = (ToHeader) request.getHeader("To");
 		String user = ((SipURI)to.getAddress().getURI()).getUser();
-		SipURI contactUri = addressFactory.createSipURI(null, user+"@"+asteriskAddress);
-		contactUri.setPort(asteriskPort);
-		System.out.println(contactUri);
+//		SipURI contactUri = addressFactory.createSipURI(null, user+"@"+asteriskAddress);
+//		contactUri.setPort(asteriskPort);
+		// added/modified for scaling
+				SipProvider sp = asteriskSipproviders.get(session.getProviderIndex()); 
+				SipURI contactUri = addressFactory.createSipURI(null, user+"@"+session.getAsteriskAddress());
+				contactUri.setPort(session.getAsteriskPort());
+				System.out.println(contactUri);
+				// end added/modified for scaling
 		CallIdHeader callId = (CallIdHeader) request.getHeader("Call-ID");
 		CSeqHeader cSeq = (CSeqHeader) request.getHeader("CSeq");
 		
@@ -714,13 +963,16 @@ public class SipAs implements SipListener {
 //		asteriskRequest.addHeader(assertedIdentity);
 		Address toAddress = to.getAddress();
 		AddressImpl astAddress = new AddressImpl();
-		SipURI asteriskUri = addressFactory.createSipURI(null, asteriskAddress);
-		asteriskUri.setPort(5070);
+		//add/ modify for scaling
+				SipURI asteriskUri = addressFactory.createSipURI(null, session.getAsteriskAddress());
+				asteriskUri.setPort(session.getAsteriskPort());
+//		SipURI asteriskUri = addressFactory.createSipURI(null, asteriskAddress);
+//		asteriskUri.setPort(5070);
 		astAddress.setAddess(asteriskUri);
 		
 		
 		System.out.println("\n\nBYE TO ASTERISK:\n"+asteriskRequest);
-		sipProvider.sendRequest(asteriskRequest);
+		sp.sendRequest(asteriskRequest);
 		}
 		
 		catch(Exception e)
@@ -733,94 +985,94 @@ public class SipAs implements SipListener {
 	
 	
 
-	private void processReInvite(Request request) {
-		System.out.println("\n\nPROCESSING A REINVITE...\n");
-		// TODO Auto-generated method stub
-		
-			Request reInvite=null;
-			
-			ArchivioSessioniVcc archivioSessioni = ArchivioSessioniVcc.getInstance();
-			SessioneVcc sessione = archivioSessioni.get(request);
-			Response okResponse = sessione.getInviteOK();
-			Request oldInvite = sessione.getInvite();
-			CSeqHeader cSeqHeader = null;
-			
-//			Viene creata una risposta di OK da mandare al client che ha richiesto un re-invite
-			try {
-				cSeqHeader = headerFactory.createCSeqHeader((long)300, Request.INVITE);
-				CallIdHeader inviteCallId = (CallIdHeader) request.getHeader("Call-ID");
-				request.removeHeader("Call-ID");
-				CallIdHeader idHeader = headerFactory.createCallIdHeader(((CallIdHeader)oldInvite.getHeader("Call-ID")).getCallId());
-				request.addHeader(idHeader);
-				request.removeHeader("CSeq");
-				cSeqHeader = headerFactory.createCSeqHeader((long)300, Request.INVITE);
-				request.addHeader(cSeqHeader);
-				reInvite = (Request) request.clone();
-				RouteHeader me = (RouteHeader) request.getHeaders("Route").next();
-				request.removeHeader("Route");
-				request.addHeader(me);
-				RecordRouteHeader recordMe = headerFactory.createRecordRouteHeader(me.getAddress());
-				request.addFirst(recordMe);
-				sessione.setInvite(request);
-				sessione.setEstablished(false);
-				
-				okResponse.removeHeader("CSeq");
-				okResponse.addHeader(cSeqHeader);
-				okResponse.removeHeader("Call-ID");
-				okResponse.addHeader(inviteCallId);
-				ListIterator it = request.getHeaders("Via");
-				ListIterator vias = okResponse.getHeaders("Via");
-				while(vias.hasNext())
-				{
-				  okResponse.removeHeader("Via");
-				  vias.next();
-				}
-				
-				
-				while(it.hasNext())
-				{
-					ViaHeader via = (ViaHeader) it.next();
-					okResponse.addLast(via);
-				}
-			
-				okResponse.addHeader(recordMe);
-				SipUtils.removeViaHeader(okResponse);
-				System.out.println("\n\n\nOK RESPONSE:\n"+okResponse);
-				sipProvider.sendResponse(okResponse);
-			} catch (Exception e) {
-				System.out.println("ERROR in sending the RE-INVITE OK");
-				e.printStackTrace();
-			}
-			
-			
-			//Viene mandato il re-INVITE ad Asterisk
-			
-			System.out.println("\n\nFORWARD  RE-INVITE TO ASTERISK");
-			Request inviteToAsterisk = (Request) sessione.getInviteToAsterisk().clone();
-			
-
-			inviteToAsterisk.removeHeader("Route");
-			
-			try {
-	
-				SessionDescription sd = SipUtils.getSessionDescription(request);
-				SessionDescription nuovaSd = SipUtils.makeSessionDescription(sd, qRiChiamante);
-				inviteToAsterisk.removeContent();
-				inviteToAsterisk.setContent(nuovaSd, headerFactory.createContentTypeHeader("application","sdp"));
-				CSeqHeader cSeq = headerFactory.createCSeqHeader((long) 300, Request.INVITE);
-				inviteToAsterisk.removeHeader("Cseq");
-				inviteToAsterisk.addHeader(cSeq);
-				sipProvider.sendRequest(inviteToAsterisk);
-				
-			} catch (Exception e) {
-				System.out.println("ERROR sending RE-INVITE to ASTERISK");
-				e.printStackTrace();
-			}	
-			
-			
-
-		
-	}
+//	private void processReInvite(Request request) {
+//		System.out.println("\n\nPROCESSING A REINVITE...\n");
+//		// TODO Auto-generated method stub
+//		
+//			Request reInvite=null;
+//			
+//			ArchivioSessioniVcc archivioSessioni = ArchivioSessioniVcc.getInstance();
+//			SessioneVcc sessione = archivioSessioni.get(request);
+//			Response okResponse = sessione.getInviteOK();
+//			Request oldInvite = sessione.getInvite();
+//			CSeqHeader cSeqHeader = null;
+//			
+////			Viene creata una risposta di OK da mandare al client che ha richiesto un re-invite
+//			try {
+//				cSeqHeader = headerFactory.createCSeqHeader((long)300, Request.INVITE);
+//				CallIdHeader inviteCallId = (CallIdHeader) request.getHeader("Call-ID");
+//				request.removeHeader("Call-ID");
+//				CallIdHeader idHeader = headerFactory.createCallIdHeader(((CallIdHeader)oldInvite.getHeader("Call-ID")).getCallId());
+//				request.addHeader(idHeader);
+//				request.removeHeader("CSeq");
+//				cSeqHeader = headerFactory.createCSeqHeader((long)300, Request.INVITE);
+//				request.addHeader(cSeqHeader);
+//				reInvite = (Request) request.clone();
+//				RouteHeader me = (RouteHeader) request.getHeaders("Route").next();
+//				request.removeHeader("Route");
+//				request.addHeader(me);
+//				RecordRouteHeader recordMe = headerFactory.createRecordRouteHeader(me.getAddress());
+//				request.addFirst(recordMe);
+//				sessione.setInvite(request);
+//				sessione.setEstablished(false);
+//				
+//				okResponse.removeHeader("CSeq");
+//				okResponse.addHeader(cSeqHeader);
+//				okResponse.removeHeader("Call-ID");
+//				okResponse.addHeader(inviteCallId);
+//				ListIterator it = request.getHeaders("Via");
+//				ListIterator vias = okResponse.getHeaders("Via");
+//				while(vias.hasNext())
+//				{
+//				  okResponse.removeHeader("Via");
+//				  vias.next();
+//				}
+//				
+//				
+//				while(it.hasNext())
+//				{
+//					ViaHeader via = (ViaHeader) it.next();
+//					okResponse.addLast(via);
+//				}
+//			
+//				okResponse.addHeader(recordMe);
+//				SipUtils.removeViaHeader(okResponse);
+//				System.out.println("\n\n\nOK RESPONSE:\n"+okResponse);
+//				sipProvider.sendResponse(okResponse);
+//			} catch (Exception e) {
+//				System.out.println("ERROR in sending the RE-INVITE OK");
+//				e.printStackTrace();
+//			}
+//			
+//			
+//			//Viene mandato il re-INVITE ad Asterisk
+//			
+//			System.out.println("\n\nFORWARD  RE-INVITE TO ASTERISK");
+//			Request inviteToAsterisk = (Request) sessione.getInviteToAsterisk().clone();
+//			
+//
+//			inviteToAsterisk.removeHeader("Route");
+//			
+//			try {
+//	
+//				SessionDescription sd = SipUtils.getSessionDescription(request);
+//				SessionDescription nuovaSd = SipUtils.makeSessionDescription(sd, qRiChiamante);
+//				inviteToAsterisk.removeContent();
+//				inviteToAsterisk.setContent(nuovaSd, headerFactory.createContentTypeHeader("application","sdp"));
+//				CSeqHeader cSeq = headerFactory.createCSeqHeader((long) 300, Request.INVITE);
+//				inviteToAsterisk.removeHeader("Cseq");
+//				inviteToAsterisk.addHeader(cSeq);
+//				sipProvider.sendRequest(inviteToAsterisk);
+//				
+//			} catch (Exception e) {
+//				System.out.println("ERROR sending RE-INVITE to ASTERISK");
+//				e.printStackTrace();
+//			}	
+//			
+//			
+//
+//		
+//	}
 	
 
 	
@@ -858,54 +1110,54 @@ public class SipAs implements SipListener {
 
 	
 
-	private void estraiSdpMedia(Message message) {
-		System.out.println("Extracting SdpMedia...");
-		SessionDescription sessionDescriptor = SipUtils
-				.getSessionDescription(message);
-		if (sessionDescriptor == null)
-		{
-			System.out.println("SessionDescriptor NULL");
-			return;
-		}
-			
-		try {
-
-			String username = SipUtils.estraiUsername(message);
-			String ip = sessionDescriptor.getOrigin().getAddress();
-			Connection con = sessionDescriptor.getConnection();
-			con.setAddress(mediaServer);
-			sessionDescriptor.setConnection(con);
-			Vector mediaDescriptions = sessionDescriptor
-					.getMediaDescriptions(false);
-			for (Object mediaDescription : mediaDescriptions) {
-				Media media = ((MediaDescription) mediaDescription).getMedia();
-				SessioneVcc sessione = ArchivioSessioniVcc.getInstance().get(
-						message);
-				if (media.getMediaType().equals("audio")) {
-					sessione.setHost(username, ip);
-					sessione.setRedirectHost(mediaServer);
-					int port = sessione.setPort(username, media.getMediaPort());
-					media.setMediaPort(port);
-					mediaDescriptions.removeAllElements();
-					MediaDescription mediaDesc = (MediaDescription) mediaDescription;
-					mediaDesc.setMedia(media);
-					mediaDescriptions.add(mediaDesc);
-					sessionDescriptor.setMediaDescriptions(mediaDescriptions);
-
-					message.setContent(sessionDescriptor,
-							(ContentTypeHeader) headerFactory
-									.createContentTypeHeader("application",
-											"sdp"));
-
-				}
-
-			}
-        System.out.println("SdpMedia Extracted");
-		} catch (Exception e) {
-			// TODO: handle exception
-			e.printStackTrace();
-		}
-	}
+//	private void estraiSdpMedia(Message message) {
+//		System.out.println("Extracting SdpMedia...");
+//		SessionDescription sessionDescriptor = SipUtils
+//				.getSessionDescription(message);
+//		if (sessionDescriptor == null)
+//		{
+//			System.out.println("SessionDescriptor NULL");
+//			return;
+//		}
+//			
+//		try {
+//
+//			String username = SipUtils.estraiUsername(message);
+//			String ip = sessionDescriptor.getOrigin().getAddress();
+//			Connection con = sessionDescriptor.getConnection();
+//			con.setAddress(mediaServer);
+//			sessionDescriptor.setConnection(con);
+//			Vector mediaDescriptions = sessionDescriptor
+//					.getMediaDescriptions(false);
+//			for (Object mediaDescription : mediaDescriptions) {
+//				Media media = ((MediaDescription) mediaDescription).getMedia();
+//				SessioneVcc sessione = ArchivioSessioniVcc.getInstance().get(
+//						message);
+//				if (media.getMediaType().equals("audio")) {
+//					sessione.setHost(username, ip);
+//					sessione.setRedirectHost(mediaServer);
+//					int port = sessione.setPort(username, media.getMediaPort());
+//					media.setMediaPort(port);
+//					mediaDescriptions.removeAllElements();
+//					MediaDescription mediaDesc = (MediaDescription) mediaDescription;
+//					mediaDesc.setMedia(media);
+//					mediaDescriptions.add(mediaDesc);
+//					sessionDescriptor.setMediaDescriptions(mediaDescriptions);
+//
+//					message.setContent(sessionDescriptor,
+//							(ContentTypeHeader) headerFactory
+//									.createContentTypeHeader("application",
+//											"sdp"));
+//
+//				}
+//
+//			}
+//        System.out.println("SdpMedia Extracted");
+//		} catch (Exception e) {
+//			// TODO: handle exception
+//			e.printStackTrace();
+//		}
+//	}
 
 	public void processTimeout(TimeoutEvent arg0) {
 		// TODO Auto-generated method stub
@@ -980,35 +1232,53 @@ public class SipAs implements SipListener {
 	
 	private void inoltraInviteToAsterisk(Request request)
 	{
+		
 		FromHeader from = (FromHeader) request.getHeader("From");
 		Address fromAddress = from.getAddress();
 		table.put(fromAddress.getDisplayName(), request);
 		ringingSemaforo.put(fromAddress.getDisplayName(), 1);
 		okSemaforo.put(fromAddress.getDisplayName(), 1);
+		SipProvider tmpSipProvider;
 		
 		try{
+			
 			System.out.println("\n\nFORWARDIND THE INVITE TO ASTERISK");
 			Request invite = (Request) request.clone();
 			ToHeader to = (ToHeader) invite.getHeader("To");
 			String user = ((SipURI)to.getAddress().getURI()).getUser();
-			SipURI contactUri = addressFactory.createSipURI(null, user+"@"+asteriskAddress);
-			contactUri.setPort(asteriskPort);
+//			SipURI contactUri = addressFactory.createSipURI(null, user+"@"+asteriskAddress);
+//			contactUri.setPort(asteriskPort);
+			// fixing to scale
+//			SipURI contactUri = addressFactory.createSipURI(null, user+"@"+asteriskAddress);
+//			contactUri.setPort(asteriskPort);
+			// modified to select asterisk
+			ArchivioSessioniVcc archivio = ArchivioSessioniVcc.getInstance();
+			SessioneVcc sessione = archivio.get(request);
+			tmpSipProvider = asteriskSipproviders.get(sessione.getProviderIndex());
+			SipURI contactUri = addressFactory.createSipURI(null, user+"@"+sessione.getAsteriskAddress());
+			contactUri.setPort(sessione.getAsteriskPort());
+			// end
 			invite.setRequestURI(contactUri);
 			invite.removeHeader("Route");
-			SessionDescription oldSd = SipUtils.getSessionDescription(invite);
-			SessionDescription newSd = SipUtils.makeSessionDescription(oldSd, qChiamato);
+			
+			
+//			SipURI su = addressFactory.createSipURI(null, "192.168.56.5"+":"+"5070");
+//			RouteHeader rh = headerFactory.createRouteHeader(addressFactory.createAddress(su));
+			//invite.addHeader(rh);
+			// removing sdp modified
+		//	SessionDescription oldSd = SipUtils.getSessionDescription(invite);
+		//	SessionDescription newSd = SipUtils.makeSessionDescription(oldSd, qChiamato);
 			
 			// add by me, trying to adjust sdp packets
 //			invite.removeContent();
 //			invite.setContent(newSd, headerFactory.createContentTypeHeader("application","sdp"));
 			
 			// end add by me, trying to adjust sdp packets
-			ArchivioSessioniVcc archivio = ArchivioSessioniVcc.getInstance();
-			SessioneVcc sessione = archivio.get(request);
+			
 			sessione.setInviteToAsterisk(invite);
 			System.out.println("\n\nINVITE TO ASTERISK:\n"+invite);
-			sipProvider.sendRequest(invite);
-				
+			//sipProvider.sendRequest(invite);
+			tmpSipProvider.sendRequest(invite);
 		}
 		catch(Exception e)
 		{
@@ -1059,7 +1329,11 @@ public class SipAs implements SipListener {
 			ringingSemaforo.remove(utente);
 			ringingSemaforo.put(utente, 0);
 			try{
+				// added for scaling
+				RouteHeader rh = headerFactory.createRouteHeader(addressFactory.createAddress(sessione.getAsteriskAddress()+":"+sessione.getAsteriskPort())); 
 				
+				response.addHeader(rh);
+				// end added for scaling
 			sipProvider.sendResponse(response);
 			}
 			catch(Exception e)
@@ -1074,15 +1348,20 @@ public class SipAs implements SipListener {
 		  if(asteriskTable.containsKey(utente))
 		   {
 			Request inviteRequest = (Request)asteriskTable.get(utente);
-		
+			//added for scaling
+			ArchivioSessioniVcc archivio = ArchivioSessioniVcc.getInstance();
+			SessioneVcc sessione = archivio.get(response);
+			SipProvider sp = asteriskSipproviders.get(sessione.getProviderIndex());
+			//end added for scaling
 			
 			
 			Response ringing = messageFactory.createResponse(180, inviteRequest);
 			ringing.setReasonPhrase("Ringing");
 			System.out.println("RINGING TO ASTERISK:\n"+ringing);
 			SipUtils.removeViaHeader(ringing);
-			sipProvider.sendResponse(ringing);
-		  }
+			//sipProvider.sendResponse(ringing);
+			sp.sendResponse(ringing);
+		   }
 		 
 			}
 			catch(Exception e)
@@ -1098,6 +1377,7 @@ public class SipAs implements SipListener {
 		
 		ArchivioSessioniVcc archivio = ArchivioSessioniVcc.getInstance();
 		SessioneVcc sessione = archivio.get(request);
+		SipProvider sp = asteriskSipproviders.get(sessione.getProviderIndex());
 		//sessione.setEstablished(true);
 		
 		try{
@@ -1135,12 +1415,17 @@ public class SipAs implements SipListener {
 		    to.setTag(sessione.getTagTo());
 		    request.setHeader(to);
 			sipProvider.sendRequest(request);
+			//modify for scaling
+			SipURI asteriskUri = addressFactory.createSipURI(null, sessione.getAsteriskAddress());
+			asteriskUri.setPort(sessione.getAsteriskPort());
+			//modify for scaling
 			Request asteriskAckRequest = (Request) request.clone();
-			SipURI asteriskUri = addressFactory.createSipURI(null, asteriskAddress);
-			asteriskUri.setPort(asteriskPort);
+//			SipURI asteriskUri = addressFactory.createSipURI(null, asteriskAddress);
+//			asteriskUri.setPort(asteriskPort);
+			
 			asteriskAckRequest.setRequestURI(asteriskUri);
 			asteriskAckRequest.removeHeader("Route");
-			sipProvider.sendRequest(asteriskAckRequest);
+			sp.sendRequest(asteriskAckRequest);
 			// questo blocco manda un re-invite ad asterisk per la conferma del codec, non è necessario
 //			Request invite = (Request) sessione.getInviteToAsterisk().clone();
 //			SdpFactory sdpFactory = SdpFactory.getInstance();
@@ -1259,7 +1544,22 @@ public class SipAs implements SipListener {
 		System.out.println("BYE OLD REQUEST:\n"+byeRequest);
 		Response okResponse = messageFactory.createResponse(200, byeRequest);
 		SipUtils.removeViaHeader(okResponse);
-		sipProvider.sendResponse(okResponse);
+		// added for scaling
+				ArchivioSessioniVcc archivio = ArchivioSessioniVcc.getInstance();
+				//SessioneVcc sessione = archivio.get(response);
+				SessioneVcc sessione = archivio.get(response);
+				SipProvider sp = asteriskSipproviders.get(sessione.getProviderIndex());
+				System.out.println("\nQuesta è la sessione--> "+from+"  "+((ToHeader)response.getHeader("To")).getAddress().getDisplayName()+"\n");
+				RouteHeader rh = headerFactory.createRouteHeader(addressFactory.createAddress(sessione.getAsteriskAddress()+":"+sessione.getAsteriskPort()));
+				okResponse.setHeader(rh);
+				// end added for scaling
+				System.out.println("\nQuesta la response \n"+okResponse);
+		sp.sendResponse(okResponse);
+<<<<<<< HEAD
+		System.err.println(archivio.getSessionsNumber());
+		archivio.remove(response);
+=======
+>>>>>>> 79922d983b2abd261969ca8eb8b0ab0c8751b905
 		}
 		catch(Exception e)
 		{
@@ -1278,8 +1578,12 @@ public class SipAs implements SipListener {
 		Request ackRequest = sessione.getAckMessage();
 		Request asteriskAckRequest = (Request) ackRequest.clone();
 		try{
-		SipURI asteriskUri = addressFactory.createSipURI(null, asteriskAddress);
-		asteriskUri.setPort(asteriskPort);
+			//add/ modify for scaling
+//			SipURI asteriskUri = addressFactory.createSipURI(null, asteriskAddress);
+//			asteriskUri.setPort(asteriskPort);
+				SipURI asteriskUri = addressFactory.createSipURI(null, sessione.getAsteriskAddress());
+				asteriskUri.setPort(sessione.getAsteriskPort());
+			asteriskAckRequest.setRequestURI(asteriskUri);
 		asteriskAckRequest.setRequestURI(asteriskUri);
 		
 		//asteriskAckRequest.setRequestURI(((ContactHeader) response.getHeader("Contact")).getAddress().getURI());
@@ -1335,7 +1639,9 @@ public class SipAs implements SipListener {
 		Response okResponse = sessione.getOkToAsterisk();
 		okResponse.removeHeader("CSeq");
 		okResponse.addHeader(response.getHeader("CSeq"));
-		okResponse.setContent(response.getContent(), headerFactory.createContentTypeHeader("application","sdp"));
+		//// removing the sdp modified
+		//okResponse.setContent(response.getContent(), headerFactory.createContentTypeHeader("application","sdp"));
+		// end removing the sdp modified
 		sipProvider.sendResponse(okResponse);
 		}
 		catch(Exception e)
@@ -1381,11 +1687,12 @@ public class SipAs implements SipListener {
 		//	sessione.setAsteriskOK(asteriskOK);
 			Response okResponse = (Response)sessione.getInviteOK().clone();
 			SipUtils.removeViaHeader(okResponse);
-			SessionDescription sd = SipUtils.getSessionDescription(okResponse);
-			SessionDescription newSd = SipUtils.makeSessionDescription(sd, qChiamante);
-			okResponse.removeContent();
-			okResponse.setContent(newSd, headerFactory.createContentTypeHeader("application","sdp"));
-			
+			// removing the sdp modified
+//			SessionDescription sd = SipUtils.getSessionDescription(okResponse);
+//			SessionDescription newSd = SipUtils.makeSessionDescription(sd, qChiamante);
+//			okResponse.removeContent();
+//			okResponse.setContent(newSd, headerFactory.createContentTypeHeader("application","sdp"));
+			// end removing the sdp modified
 			sipProvider.sendResponse(okResponse);
 			}catch(Exception e)
 			{
