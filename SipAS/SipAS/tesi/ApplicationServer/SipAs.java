@@ -178,11 +178,7 @@ public class SipAs implements SipListener {
 		new SipAs().init();
 		
 		try {
-<<<<<<< HEAD
 			DatagramSocket ds = null;
-=======
-			DatagramSocket ds = new DatagramSocket(5070);
->>>>>>> 79922d983b2abd261969ca8eb8b0ab0c8751b905
 //			char[] buffer = new char[1];
 //			InputStreamReader isr = new InputStreamReader(System.in);
 //			BufferedReader br = new BufferedReader(isr);
@@ -222,18 +218,12 @@ public class SipAs implements SipListener {
 //						System.out.println("An Asterisk VM instance has been removed at "+secondAsteriskAddress+":"+secondAsteriskPort);
 //					}break;
 //				}
-<<<<<<< HEAD
 				ds=new DatagramSocket(5070);
-=======
->>>>>>> 79922d983b2abd261969ca8eb8b0ab0c8751b905
 				DatagramPacket dp = new DatagramPacket(receivedData, receivedData.length);
 				System.out.println("A Service UDP socket has been opened at "+localAddress+":5070");
 				ds.receive(dp);
 				String data = new String(dp.getData());
-<<<<<<< HEAD
 				System.out.println("Data Received ->  "+data);
-=======
->>>>>>> 79922d983b2abd261969ca8eb8b0ab0c8751b905
 				StringTokenizer st = new StringTokenizer(data,"@");
 				String action =st.nextToken();
 				String address = st.nextToken();
@@ -241,13 +231,8 @@ public class SipAs implements SipListener {
 				if(action.compareTo("add")==0)
 				{
 					//add
-<<<<<<< HEAD
 					//asteriskPool.add(new AsteriskEndPoint(address,port));
 					System.out.println("A new Asterisk VM instance has been added at "+address+":"+port);
-=======
-					asteriskPool.add(new AsteriskEndPoint(secondAsteriskAddress,secondAsteriskPort));
-					System.out.println("A new Asterisk VM instance has been added at "+secondAsteriskAddress+":"+secondAsteriskPort);
->>>>>>> 79922d983b2abd261969ca8eb8b0ab0c8751b905
 					Properties properties2 = new Properties();
 					properties2.setProperty("javax.sip.OUTBOUND_PROXY", address + ":"
 							+ port + "/" + "udp");
@@ -262,15 +247,9 @@ public class SipAs implements SipListener {
 					asteriskPool.add(new AsteriskEndPoint(address,port));
 					asteriskSipStackPool.add(newSipStack);
 					asteriskSipproviders.add(newSipProvider);
-<<<<<<< HEAD
 					ds.close();
 				}
 				if(action.compareTo("rem")==0)
-=======
-					
-				}
-				else
->>>>>>> 79922d983b2abd261969ca8eb8b0ab0c8751b905
 				{
 					//remove
 					AsteriskEndPoint ap = new AsteriskEndPoint(address,port);
@@ -280,10 +259,7 @@ public class SipAs implements SipListener {
 					asteriskSipproviders.remove(index);
 					portCounter--;
 					System.out.println("An Asterisk VM instance has been removed at "+address+":"+port);
-<<<<<<< HEAD
 					ds.close();
-=======
->>>>>>> 79922d983b2abd261969ca8eb8b0ab0c8751b905
 				}
 			}
 		} 
@@ -390,10 +366,7 @@ public class SipAs implements SipListener {
 		}
 
 		asteriskPool.add(new AsteriskEndPoint(asteriskAddress,asteriskPort));
-<<<<<<< HEAD
 		asteriskSipStackPool.add(sipStack);
-=======
->>>>>>> 79922d983b2abd261969ca8eb8b0ab0c8751b905
 		asteriskSipproviders.add(sipProvider);
 		//asteriskSipproviders.add(sipProvider2);
 	}
@@ -707,7 +680,6 @@ public class SipAs implements SipListener {
 				//Se il messaggio di INVITE giunge al SipAS per la prima volta
 				if(sessione==null)
 				    {
-<<<<<<< HEAD
 					
 						archivioSessioniVcc.add(request);
 						//added for scaling
@@ -715,11 +687,6 @@ public class SipAs implements SipListener {
 						System.out.println("\n\nSELECTED ASTERISK  -> "+selectedAsterisk+"\n\n");
 						System.out.println("\n\nCALL CAOUNTER  -> "+callcounter+"\n\n");
 						System.out.println("\n\nASTERISK POOLSIZE  -> "+asteriskPool.size()+"\n\n");
-=======
-						archivioSessioniVcc.add(request);
-						//added for scaling
-						int selectedAsterisk = callcounter % asteriskPool.size();
->>>>>>> 79922d983b2abd261969ca8eb8b0ab0c8751b905
 						SessioneVcc session = archivioSessioniVcc.get(request);
 						session.setAsteriskAddress(asteriskPool.get(selectedAsterisk).getAddress());
 						session.setAsteriskPort(asteriskPool.get(selectedAsterisk).getPort());
@@ -1555,11 +1522,8 @@ public class SipAs implements SipListener {
 				// end added for scaling
 				System.out.println("\nQuesta la response \n"+okResponse);
 		sp.sendResponse(okResponse);
-<<<<<<< HEAD
 		System.err.println(archivio.getSessionsNumber());
 		archivio.remove(response);
-=======
->>>>>>> 79922d983b2abd261969ca8eb8b0ab0c8751b905
 		}
 		catch(Exception e)
 		{

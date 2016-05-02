@@ -39,7 +39,6 @@ public class ArchivioSessioniVcc {
 
 	}
 	
-<<<<<<< HEAD
 	public int getSessionsNumber()
 	{
 		return lista.size();
@@ -48,11 +47,6 @@ public class ArchivioSessioniVcc {
 	
 
 	public SessioneVcc remove(Message request) {
-=======
-	
-
-	public SessioneVcc remove(Request request) {
->>>>>>> 79922d983b2abd261969ca8eb8b0ab0c8751b905
 
 		SessioneVcc sessioneVcc = get(request);
 		lista.remove(sessioneVcc);
